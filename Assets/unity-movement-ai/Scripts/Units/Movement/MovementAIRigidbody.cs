@@ -344,8 +344,9 @@ public class MovementAIRigidbody : MonoBehaviour
                      * new pos can be slightly different so the character will jitter. To avoid the jitter
                      * move up to wall will only do so if the move up distance is greater the physic's min
                      * penetration distance. */
-                    float moveUpDist = Mathf.Clamp(hitInfo.distance, 0, maxMoveUpDist);
-                    if(moveUpDist >= spherecastOffset)
+                    float moveUpDist = Mathf.Max(0, hitInfo.distance);
+                    //if (moveUpDist >= spherecastOffset)
+                    if (moveUpDist <= maxMoveUpDist)
                     {
                         rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
                     }
