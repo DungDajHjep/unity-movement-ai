@@ -19,7 +19,7 @@ public class MovementAIRigidbody : MonoBehaviour
     public bool stayGrounded = true;
 
     /* How far the character should look below him for ground to stay grounded to */
-    public float groundFollowDistance = 0.1f;
+    public float groundFollowDistance = 0.05f;
 
     /* The sphere cast mask that determines what layers should be consider the ground */
     public LayerMask groundCheckMask = Physics.DefaultRaycastLayers;
@@ -291,7 +291,8 @@ public class MovementAIRigidbody : MonoBehaviour
         for (int i = 0; i < 2; i++)
         {
             Vector3 direction = rb3D.velocity.normalized;
-            float dist = rb3D.velocity.magnitude * Time.deltaTime;
+            float maxMoveUpDist = rb3D.velocity.magnitude * Time.deltaTime;
+            float dist = maxMoveUpDist + spherecastOffset;
 
             Vector3 origin = colliderPosition;
             countDebug++;
@@ -337,9 +338,17 @@ public class MovementAIRigidbody : MonoBehaviour
                 /* Else move along the wall */
                 else
                 {
-                    /* Move up to the on coming wall */
-                    float moveUpDist = Mathf.Max(0, hitInfo.distance);
-                    rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
+                    /* Move up to the on coming wall.
+                     *
+                     * In certain wall/ground situations the findGround() new pos and the move up to wall
+                     * new pos can be slightly different so the character will jitter. To avoid the jitter
+                     * move up to wall will only do so if the move up distance is greater the physic's min
+                     * penetration distance. */
+                    float moveUpDist = Mathf.Clamp(hitInfo.distance, 0, maxMoveUpDist);
+                    if(moveUpDist >= spherecastOffset)
+                    {
+                        rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
+                    }
 
                     rb3D.velocity = projectedVel;
 
