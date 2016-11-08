@@ -318,6 +318,12 @@ public class MovementAIRigidbody : MonoBehaviour
             if (sphereCast(direction, out hitInfo, dist, groundCheckMask.value, movementNormal) && isWall(hitInfo.normal)
                 && isMovingInto(direction, hitInfo.normal))
             {
+                /* Move up to the on coming wall */
+                //float moveUpDist = Mathf.Clamp(hitInfo.distance, 0, maxMoveUpDist);
+                float moveUpDist = Mathf.Max(0, hitInfo.distance);
+                if (moveUpDist <= maxMoveUpDist)
+                    rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
+
                 Vector3 projectedVel = limitVelocityOnWall(rb3D.velocity, hitInfo.normal);
                 Vector3 projectedStartVel = limitVelocityOnWall(startVelocity, hitInfo.normal);
 
@@ -338,11 +344,6 @@ public class MovementAIRigidbody : MonoBehaviour
                 /* Else move along the wall */
                 else
                 {
-                    /* Move up to the on coming wall */
-                    float moveUpDist = Mathf.Max(0, hitInfo.distance);
-                    if(moveUpDist <= maxMoveUpDist)
-                        rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
-
                     rb3D.velocity = projectedVel;
 
                     /* Make this wall the previous wall */
