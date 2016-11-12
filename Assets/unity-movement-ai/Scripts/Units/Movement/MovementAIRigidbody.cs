@@ -291,7 +291,8 @@ public class MovementAIRigidbody : MonoBehaviour
         for (int i = 0; i < 2; i++)
         {
             Vector3 direction = rb3D.velocity.normalized;
-            float dist = rb3D.velocity.magnitude * Time.deltaTime;
+            float maxMoveUpDist = rb3D.velocity.magnitude * Time.deltaTime;
+            float dist = Mathf.Max(maxMoveUpDist, spherecastOffset);
 
             Vector3 origin = colliderPosition;
             countDebug++;
@@ -320,6 +321,10 @@ public class MovementAIRigidbody : MonoBehaviour
                 Vector3 projectedVel = limitVelocityOnWall(rb3D.velocity, hitInfo.normal);
                 Vector3 projectedStartVel = limitVelocityOnWall(startVelocity, hitInfo.normal);
 
+                /* Move up to the on coming wall */
+                float moveUpDist = Mathf.Clamp(hitInfo.distance, 0, maxMoveUpDist);
+                rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
+
                 /* If we have a previous wall. And if the latest velocity is moving into the previous wall or if 
                  * our starting velocity projected onto this new wall is moving into the previous wall then stop
                  * movement */
@@ -337,10 +342,6 @@ public class MovementAIRigidbody : MonoBehaviour
                 /* Else move along the wall */
                 else
                 {
-                    /* Move up to the on coming wall */
-                    float moveUpDist = Mathf.Max(0, hitInfo.distance);
-                    rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
-
                     rb3D.velocity = projectedVel;
 
                     /* Make this wall the previous wall */
