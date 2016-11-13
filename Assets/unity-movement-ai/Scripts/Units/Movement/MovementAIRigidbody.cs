@@ -142,12 +142,12 @@ public class MovementAIRigidbody : MonoBehaviour
         yield return new WaitForFixedUpdate();
 
         Vector3 origin = colliderPosition;
-        Debug.DrawLine(origin, origin + (velocity.normalized), Color.red, 0f, false);
+        //Debug.DrawLine(origin, origin + (velocity.normalized), Color.red, 0f, false);
         if(is3D)
         {
-            Debug.DrawLine(origin, origin + (realVelocity.normalized), Color.green, 0f, false);
-            Debug.DrawLine(origin, origin + (wallNormal), Color.yellow, 0f, false);
-            Debug.DrawLine(origin, origin + (movementNormal), Color.blue, 0f, false);
+            //Debug.DrawLine(origin, origin + (realVelocity.normalized), Color.green, 0f, false);
+            //Debug.DrawLine(origin, origin + (wallNormal), Color.yellow, 0f, false);
+            //Debug.DrawLine(origin, origin + (movementNormal), Color.blue, 0f, false);
         }
 
         //SteeringBasics.debugCross(colliderPosition, 0.5f, Color.red, 0, false);
@@ -159,7 +159,7 @@ public class MovementAIRigidbody : MonoBehaviour
         countDebug = 0;
         StartCoroutine(debugDraw());
     }
-
+    Vector3 lastRed, curRed, curBlue;
     void FixedUpdate()
     {
         /* If the character can't fly then find the current the ground normal */
@@ -178,6 +178,10 @@ public class MovementAIRigidbody : MonoBehaviour
              */
             if (sphereCast(Vector3.down, out downHit, groundFollowDistance, groundCheckMask.value))
             {
+                SteeringBasics.debugCross(downHit.point, 0.25f, Color.red, 0.04f, false);
+                lastRed = curRed;
+                curRed = downHit.point;
+
                 if (isWall(downHit.normal))
                 {
                     /* Get vector pointing down the wall */
@@ -189,14 +193,17 @@ public class MovementAIRigidbody : MonoBehaviour
                     RaycastHit downWallHit;
 
                     /* If we found ground that we would have hit if not for the wall then follow it */
-                    if (remainingDist > 0 && sphereCast(downSlope, out downWallHit, remainingDist, groundCheckMask.value, downHit.normal) && !isWall(downWallHit.normal))
+                    if (sphereCast(downSlope, out downWallHit, remainingDist, groundCheckMask.value, downHit.normal) && !isWall(downWallHit.normal) && remainingDist > 0)
                     {
                         Vector3 newPos = rb3D.position + (downSlope * downWallHit.distance);
                         foundGround(downWallHit.normal, newPos);
                     }
+                    SteeringBasics.debugCross(downWallHit.point, 0.25f, Color.blue, 0.04f, false);
+                    curBlue = downWallHit.point;
+                    Debug.Log("Last Red: " + lastRed.ToString("f4") + ", Cur Red: " + curRed + ", Cur Blue: " + curBlue + " " + Vector3.Distance(lastRed, curBlue));
 
                     /* If we are close enough to the hit to be touching it then we are on the wall */
-                    if (downHit.distance <= 0.01f)
+                    if (remainingDist > 0 && downHit.distance <= 0.01f)
                     {
                         wallNormal = downHit.normal;
                     }
@@ -293,21 +300,21 @@ public class MovementAIRigidbody : MonoBehaviour
             Vector3 direction = rb3D.velocity.normalized;
             float dist = rb3D.velocity.magnitude * Time.deltaTime;
 
-            Vector3 origin = colliderPosition;
+            //Vector3 origin = colliderPosition;
             countDebug++;
 
-            if (i == 0)
-            {
-                Debug.DrawRay(origin + Vector3.up * 0.05f * countDebug, direction, new Color(0.953f, 0.898f, 0.961f), 0f, false);
-            }
-            else if (i == 1)
-            {
-                Debug.DrawRay(origin + Vector3.up * 0.05f * countDebug, direction, new Color(0.612f, 0.153f, 0.69f), 0f, false);
-            }
-            else
-            {
-                Debug.DrawRay(origin + Vector3.up * 0.05f * countDebug, direction, new Color(0.29f, 0.078f, 0.549f), 0f, false);
-            }
+            //if (i == 0)
+            //{
+            //    Debug.DrawRay(origin + Vector3.up * 0.05f * countDebug, direction, new Color(0.953f, 0.898f, 0.961f), 0f, false);
+            //}
+            //else if (i == 1)
+            //{
+            //    Debug.DrawRay(origin + Vector3.up * 0.05f * countDebug, direction, new Color(0.612f, 0.153f, 0.69f), 0f, false);
+            //}
+            //else
+            //{
+            //    Debug.DrawRay(origin + Vector3.up * 0.05f * countDebug, direction, new Color(0.29f, 0.078f, 0.549f), 0f, false);
+            //}
 
             RaycastHit hitInfo;
 
@@ -340,6 +347,9 @@ public class MovementAIRigidbody : MonoBehaviour
                     /* Move up to the on coming wall */
                     float moveUpDist = Mathf.Max(0, hitInfo.distance);
                     rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
+
+                    Debug.Log("AAANTONNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN!!!!!!!!!!!!!!!!!!");
+                    SteeringBasics.debugCross(hitInfo.point, 0.25f, Color.green, 0, false);
 
                     rb3D.velocity = projectedVel;
 
