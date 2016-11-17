@@ -165,6 +165,10 @@ public class MovementAIRigidbody : MonoBehaviour
         /* If the character can't fly then find the current the ground normal */
         if (is3D && !canFly)
         {
+            Vector3 saveMoveNormal = movementNormal;
+            Vector3 saveColPos = colliderPosition;
+            Vector3 saveRbPos = rb3D.position;
+
             /* Reset to default values */
             wallNormal = Vector3.zero;
             movementNormal = Vector3.up;
@@ -184,6 +188,11 @@ public class MovementAIRigidbody : MonoBehaviour
 
                 if (isWall(downHit.normal))
                 {
+                    RaycastHit randomHit;
+                    if(Physics.Raycast(colliderPosition, -1*saveMoveNormal.normalized, out randomHit)) {
+                        Debug.Log(randomHit.collider.name + ", Distance: " + randomHit.distance + ", Hit Normal: " + randomHit.normal.ToString("f4") + ", Expected Ground Normal: " + saveMoveNormal.ToString("f4"));
+                    }
+
                     /* Get vector pointing down the wall */
                     Vector3 rightSlope = Vector3.Cross(downHit.normal, Vector3.down);
                     Vector3 downSlope = Vector3.Cross(rightSlope, downHit.normal).normalized;
@@ -193,15 +202,17 @@ public class MovementAIRigidbody : MonoBehaviour
                     RaycastHit downWallHit;
 
                     /* If we found ground that we would have hit if not for the wall then follow it */
-                    if (sphereCast(downSlope, out downWallHit, remainingDist, groundCheckMask.value, downHit.normal) && !isWall(downWallHit.normal) && remainingDist > 0)
+                    if (sphereCast(downSlope, out downWallHit, remainingDist, groundCheckMask.value) && !isWall(downWallHit.normal) && remainingDist > 0)
                     {
                         Vector3 newPos = rb3D.position + (downSlope * downWallHit.distance);
                         foundGround(downWallHit.normal, newPos);
                     }
                     SteeringBasics.debugCross(downWallHit.point, 0.25f, Color.blue, 0.04f, false);
                     curBlue = downWallHit.point;
-                    Debug.Log("Last Red: " + lastRed.ToString("f4") + ", Cur Red: " + curRed + ", Cur Blue: " + curBlue + " " + Vector3.Distance(lastRed, curBlue));
-
+                    Debug.Log("Red = Down Hit Point, Blue = Down Wall Hit Point");
+                    Debug.Log("Last Red: " + lastRed.ToString("f4") + ", Cur Red: " + curRed.ToString("f4") + ", Cur Blue: " + curBlue.ToString("f4") + ", Dist last red to cur blue: " + Vector3.Distance(lastRed, curBlue) + ", Down Wall Hit Dist: " + downWallHit.distance);
+                    Debug.Log("Start Col Pos: " + saveColPos.ToString("f4") + ", End Col Pos: " + colliderPosition.ToString("f4") + ", Delta Col Pos: " + (colliderPosition - saveColPos).ToString("f4") + ", Delta Col Pos Mag: " + (colliderPosition - saveColPos).magnitude + ", Start Rb Pos: " + saveRbPos.ToString("f4") + ", End Rb Pos: " + rb3D.position.ToString("f4") + ", Delta Rb Pos: " + (rb3D.position - saveRbPos).ToString("f4") + ", Delta Rb Pos Mag: " + (rb3D.position - saveRbPos).magnitude + ", Are same Diff Delta: " + ((colliderPosition - saveColPos) - (rb3D.position - saveRbPos)).ToString("f4"));
+                    Debug.Log("Down Wall Down Slope: " + downSlope.ToString("f4") + ", Down Wall Hit Dist: " + downWallHit.distance);
                     /* If we are close enough to the hit to be touching it then we are on the wall */
                     if (remainingDist > 0 && downHit.distance <= 0.01f)
                     {
@@ -324,6 +335,10 @@ public class MovementAIRigidbody : MonoBehaviour
             if (sphereCast(direction, out hitInfo, dist, groundCheckMask.value, movementNormal) && isWall(hitInfo.normal)
                 && isMovingInto(direction, hitInfo.normal))
             {
+                /* Move up to the on coming wall */
+                float moveUpDist = Mathf.Max(0, hitInfo.distance);
+                rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
+
                 Vector3 projectedVel = limitVelocityOnWall(rb3D.velocity, hitInfo.normal);
                 Vector3 projectedStartVel = limitVelocityOnWall(startVelocity, hitInfo.normal);
 
@@ -344,11 +359,6 @@ public class MovementAIRigidbody : MonoBehaviour
                 /* Else move along the wall */
                 else
                 {
-                    /* Move up to the on coming wall */
-                    float moveUpDist = Mathf.Max(0, hitInfo.distance);
-                    rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
-
-                    Debug.Log("AAANTONNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN!!!!!!!!!!!!!!!!!!");
                     SteeringBasics.debugCross(hitInfo.point, 0.25f, Color.green, 0, false);
 
                     rb3D.velocity = projectedVel;
