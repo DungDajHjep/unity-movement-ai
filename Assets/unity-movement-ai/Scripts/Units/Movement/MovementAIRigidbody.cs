@@ -188,9 +188,16 @@ public class MovementAIRigidbody : MonoBehaviour
 
                 if (isWall(downHit.normal))
                 {
-                    RaycastHit randomHit;
-                    if(Physics.Raycast(colliderPosition, -1*saveMoveNormal.normalized, out randomHit)) {
-                        Debug.Log(randomHit.collider.name + ", Distance: " + randomHit.distance + ", Hit Normal: " + randomHit.normal.ToString("f4") + ", Expected Ground Normal: " + saveMoveNormal.ToString("f4"));
+                    RaycastHit wallRayHit;
+                    if (Physics.Raycast(colliderPosition, -1 * downHit.normal, out wallRayHit))
+                    {
+                        Debug.Log("Wall Ray Test: " + wallRayHit.collider.name + ", Distance: " + wallRayHit.distance + ", Hit Normal: " + wallRayHit.normal.ToString("f4") + ", Expected Wall Normal: " + downHit.normal.ToString("f4") + ", Hit Point: " + wallRayHit.point.ToString("f4") + ", Down Hit Point: " + downHit.point.ToString("f4") + ", Delta Points: " + (downHit.point - wallRayHit.point).ToString("f10"));
+                        Debug.Log("Col Pos: " + colliderPosition.ToString("f8") + ", Calc Col Pos: " + (wallRayHit.point + (downHit.normal * wallRayHit.distance)).ToString("f8") + ", Save Col Pos: " + saveColPos.ToString("f8"));
+                    }
+
+                    RaycastHit groundRayHit;
+                    if(Physics.Raycast(colliderPosition, -1 * saveMoveNormal.normalized, out groundRayHit)) {
+                        Debug.Log("Ground Ray Test: " + groundRayHit.collider.name + ", Distance: " + groundRayHit.distance + ", Hit Normal: " + groundRayHit.normal.ToString("f4") + ", Expected Ground Normal: " + saveMoveNormal.ToString("f4") +", Hit Point: " +groundRayHit.point.ToString("f4"));
                     }
 
                     /* Get vector pointing down the wall */
@@ -204,15 +211,18 @@ public class MovementAIRigidbody : MonoBehaviour
                     /* If we found ground that we would have hit if not for the wall then follow it */
                     if (sphereCast(downSlope, out downWallHit, remainingDist, groundCheckMask.value) && !isWall(downWallHit.normal) && remainingDist > 0)
                     {
+                        Debug.Log("Down Wall Point: " + downWallHit.point.ToString("f8") + ", Delta from Ground Ray Point: " + (downWallHit.point - groundRayHit.point).ToString("f4") + ", Dist from Ground Ray Point: " + Vector3.Distance(downWallHit.point, groundRayHit.point) + ", Dist From Col Pos: " + Vector3.Distance(colliderPosition, downWallHit.point));
                         Vector3 newPos = rb3D.position + (downSlope * downWallHit.distance);
                         foundGround(downWallHit.normal, newPos);
                     }
+
                     SteeringBasics.debugCross(downWallHit.point, 0.25f, Color.blue, 0.04f, false);
                     curBlue = downWallHit.point;
                     Debug.Log("Red = Down Hit Point, Blue = Down Wall Hit Point");
                     Debug.Log("Last Red: " + lastRed.ToString("f4") + ", Cur Red: " + curRed.ToString("f4") + ", Cur Blue: " + curBlue.ToString("f4") + ", Dist last red to cur blue: " + Vector3.Distance(lastRed, curBlue) + ", Down Wall Hit Dist: " + downWallHit.distance);
                     Debug.Log("Start Col Pos: " + saveColPos.ToString("f4") + ", End Col Pos: " + colliderPosition.ToString("f4") + ", Delta Col Pos: " + (colliderPosition - saveColPos).ToString("f4") + ", Delta Col Pos Mag: " + (colliderPosition - saveColPos).magnitude + ", Start Rb Pos: " + saveRbPos.ToString("f4") + ", End Rb Pos: " + rb3D.position.ToString("f4") + ", Delta Rb Pos: " + (rb3D.position - saveRbPos).ToString("f4") + ", Delta Rb Pos Mag: " + (rb3D.position - saveRbPos).magnitude + ", Are same Diff Delta: " + ((colliderPosition - saveColPos) - (rb3D.position - saveRbPos)).ToString("f4"));
                     Debug.Log("Down Wall Down Slope: " + downSlope.ToString("f4") + ", Down Wall Hit Dist: " + downWallHit.distance);
+                    
                     /* If we are close enough to the hit to be touching it then we are on the wall */
                     if (remainingDist > 0 && downHit.distance <= 0.01f)
                     {
