@@ -191,8 +191,19 @@ public class MovementAIRigidbody : MonoBehaviour
                     /* If we found ground that we would have hit if not for the wall then follow it */
                     if (remainingDist > 0 && sphereCast(downSlope, out downWallHit, remainingDist, groundCheckMask.value, downHit.normal) && !isWall(downWallHit.normal))
                     {
-                        Vector3 newPos = rb3D.position + (downSlope * downWallHit.distance);
-                        foundGround(downWallHit.normal, newPos);
+                        RaycastHit foo;
+
+                        if(Physics.Raycast(colliderPosition, -1 * downWallHit.normal, out foo, radius + remainingDist, groundCheckMask.value) && foo.distance >= radius)
+                        //if (sphereCast(-1 * downWallHit.normal, out foo, remainingDist, groundCheckMask.value))
+                        {
+                            foo.distance -= radius;
+                            //Debug.Log(foo.distance);
+                            foundGround(-1 * downWallHit.normal, foo);
+                        }
+                        else
+                        {
+                            //foundGround(downSlope, downWallHit);
+                        }
                     }
 
                     /* If we are close enough to the hit to be touching it then we are on the wall */
@@ -204,8 +215,7 @@ public class MovementAIRigidbody : MonoBehaviour
                 /* Else we've found walkable ground */
                 else
                 {
-                    Vector3 newPos = rb3D.position + (Vector3.down * downHit.distance);
-                    foundGround(downHit.normal, newPos);
+                    foundGround(Vector3.down, downHit);
                 }
             }
 
@@ -252,11 +262,15 @@ public class MovementAIRigidbody : MonoBehaviour
         }
     }
 
-    private void foundGround(Vector3 normal, Vector3 newPos)
+    private void foundGround(Vector3 rayDir, RaycastHit hit)
     {
-        movementNormal = normal;
+        movementNormal = hit.normal;
         rb3D.useGravity = false;
-        rb3D.MovePosition(newPos);
+
+        //if(Vector3.Distance(hit.point, colliderPosition) > (radius + 0.01f)) {
+            //Debug.Log(Vector3.Distance(hit.point, colliderPosition));
+            rb3D.MovePosition(rb3D.position + (rayDir * hit.distance));
+        //}
 
         /* Reproject the velocity onto the ground plane in case the ground plane has changed this frame.
          * Make sure to multiple by the movement velocity's magnitude, rather than the actual velocity
@@ -317,6 +331,10 @@ public class MovementAIRigidbody : MonoBehaviour
             if (sphereCast(direction, out hitInfo, dist, groundCheckMask.value, movementNormal) && isWall(hitInfo.normal)
                 && isMovingInto(direction, hitInfo.normal))
             {
+                /* Move up to the on coming wall */
+                float moveUpDist = Mathf.Max(0, hitInfo.distance);
+                rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
+
                 Vector3 projectedVel = limitVelocityOnWall(rb3D.velocity, hitInfo.normal);
                 Vector3 projectedStartVel = limitVelocityOnWall(startVelocity, hitInfo.normal);
 
@@ -337,10 +355,6 @@ public class MovementAIRigidbody : MonoBehaviour
                 /* Else move along the wall */
                 else
                 {
-                    /* Move up to the on coming wall */
-                    float moveUpDist = Mathf.Max(0, hitInfo.distance);
-                    rb3D.MovePosition(rb3D.position + (direction * moveUpDist));
-
                     rb3D.velocity = projectedVel;
 
                     /* Make this wall the previous wall */
